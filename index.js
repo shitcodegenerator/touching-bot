@@ -39,12 +39,11 @@ const config = {
   
     // create an echoing text message
     const echo = { type: 'text', text: event.message.text };
-    const types = JSON.stringify(event.message)
   
     // use reply API
     return client.replyMessage({
       replyToken: event.replyToken,
-      messages: [echo, types],
+      messages: [echo],
     });
   }
   
