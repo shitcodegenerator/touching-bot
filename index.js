@@ -1,41 +1,58 @@
 require('dotenv').config()
 
-const express = require('express');
-const { WebhookHandler } = require('@line/bot-sdk');
+const express = require('express')
+const line = require('@line/bot-sdk')
 
+// create LINE SDK config from env variables
 const config = {
-  channelAccessToken: 'YOUR_CHANNEL_ACCESS_TOKEN',
-  channelSecret: 'YOUR_CHANNEL_SECRET',
-};
-
-const app = express();
-const handler = new WebhookHandler(config);
-
-app.post('/callback', handler.middleware(), (req, res) => {
-  res.sendStatus(200);
-});
-
-handler.on('message', async (event) => {
-  try {
-    const message = event.message.text;
-    const replyToken = event.replyToken;
-
-    // Handle incoming messages and send responses
-    if (message === 'Hello') {
-      await replyText(replyToken, 'Hi there!');
-    } else {
-      await replyText(replyToken, 'I did not understand that.');
+    channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
+    channelSecret: process.env.CHANNEL_SECRET,
+  };
+  
+  // create LINE SDK client
+  const client = new line.messagingApi.MessagingApiClient({
+    channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
+  });
+  
+  // create Express app
+  // about Express itself: https://expressjs.com/
+  const app = express();
+  
+  // register a webhook handler with middleware
+  // about the middleware, please refer to doc
+  app.post('/callback', line.middleware(config), (req, res) => {
+    Promise
+      .all(req.body.events.map(handleEvent))
+      .then((result) => res.json(result))
+      .catch((err) => {
+        console.error(err);
+        res.status(500).end();
+      });
+  });
+  
+  // event handler
+  function handleEvent(event) {
+    if (event.type !== 'message' || event.message.type !== 'text') {
+      // ignore non-text-message event
+      return Promise.resolve(null);
     }
-  } catch (err) {
-    console.error(err);
+  
+    // create an echoing text message
+    const echo = { type: 'text', text: event.message.text };
+  
+    // use reply API
+    return client.replyMessage({
+      replyToken: event.replyToken,
+      messages: [echo],
+    });
   }
-});
+  
+  // listen on port
+  const port = process.env.PORT || 3000;
 
-async function replyText(replyToken, text) {
-  await client.replyMessage(replyToken, { type: 'text', text });
-}
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+  app.get('/', (req, res) => {
+    res.send('Hey this is my API running 🥳')
+  })
+  app.listen(port, () => {
+    console.log(`listening on ${port}`);
+  });
