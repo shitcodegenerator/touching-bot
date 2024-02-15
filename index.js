@@ -34,8 +34,7 @@ const config = {
 
   // Function to get image data using LINE API
 async function getImageData(imageId) {
-    await client.getMess
-    // const response = await client.getMessageContent(imageId);
+    const response = await client.getMessageContent(imageId);
     return response;
   }
   
