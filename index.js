@@ -10,9 +10,11 @@ const config = {
   };
   
   // create LINE SDK client
-  const client = new line.messagingApi.MessagingApiClient({
-    channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
-  });
+//   const client = new line.messagingApi.MessagingApiClient({
+//     channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
+//   });
+
+  const client = new line.messagingApi.MessagingApiClient(config);
   
   // create Express app
   // about Express itself: https://expressjs.com/
@@ -32,7 +34,8 @@ const config = {
 
   // Function to get image data using LINE API
 async function getImageData(imageId) {
-    const response = await client.getMessageContent(imageId);
+    await client.getMess
+    // const response = await client.getMessageContent(imageId);
     return response;
   }
   
