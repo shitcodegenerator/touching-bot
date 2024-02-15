@@ -2,6 +2,12 @@ require('dotenv').config()
 
 const express = require('express')
 const line = require('@line/bot-sdk')
+const fs = require('fs');
+const path = require('path');
+const cp = require('child_process');
+const ngrok = require('ngrok');
+const util = require('util');
+const { pipeline } = require('stream');
 
 // create LINE SDK config from env variables
 const config = {
