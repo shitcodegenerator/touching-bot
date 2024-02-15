@@ -10,11 +10,14 @@ const config = {
   };
   
   // create LINE SDK client
-//   const client = new line.messagingApi.MessagingApiClient({
-//     channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
-//   });
+  const client = new line.messagingApi.MessagingApiClient({
+    channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
+  });
 
-  const client = new line.messagingApi.MessagingApiClient(config);
+  const blobClient = new line.messagingApi.MessagingApiBlobClient({
+    channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
+  });
+  
   
   // create Express app
   // about Express itself: https://expressjs.com/
@@ -35,17 +38,18 @@ const config = {
   // Function to get image data using LINE API
 async function getImageData(imageId) {
     const response = await client.getMessageContent(imageId);
-    return response;
+    return response
   }
   
   // event handler
   async function handleEvent(event) {
     if (event.type === 'message' && event.message.type === 'image') {
-            const imageMessage = event.message;
-            const imageData = await getImageData(imageMessage.id);
-            await uploadToGoogleDrive(imageData);
-            // Send a confirmation message to the user
-            await client.replyMessage(event.replyToken, { type: 'text', text: 'Image uploaded successfully to Google Drive.' });
+            // const imageMessage = event.message;
+            // const imageData = await getImageData(imageMessage.id);
+            // await uploadToGoogleDrive(imageData);
+            // // Send a confirmation message to the user
+            // await client.replyMessage(event.replyToken, { type: 'text', text: 'Image uploaded successfully to Google Drive.' });
+            return handleImage(event.message, event.replyToken);
     }
     if (event.type !== 'message' || event.message.type !== 'text') {
       // ignore non-text-message event
@@ -60,6 +64,49 @@ async function getImageData(imageId) {
       replyToken: event.replyToken,
       messages: [echo],
     });
+  }
+
+  async function handleImage(message, replyToken) {
+    function sendReply(originalContentUrl, previewImageUrl) {
+      return client.replyMessage(
+        {
+          replyToken,
+          messages: [{
+            type: 'image',
+            originalContentUrl,
+            previewImageUrl,
+          }]
+        }
+      );
+    }
+  
+    if (message.contentProvider.type === "line") {
+      const downloadPath = path.join(__dirname, 'downloaded', `${message.id}.jpg`);
+      const previewPath = path.join(__dirname, 'downloaded', `${message.id}-preview.jpg`);
+  
+      await downloadContent(message.id, downloadPath);
+  
+      // ImageMagick is needed here to run 'convert'
+      // Please consider security and performance by yourself
+      cp.execSync(`convert -resize 240x jpeg:${downloadPath} jpeg:${previewPath}`);
+  
+      sendReply(
+        baseURL + '/downloaded/' + path.basename(downloadPath),
+        baseURL + '/downloaded/' + path.basename(previewPath),
+      );
+    } else if (message.contentProvider.type === "external") {
+      sendReply(message.contentProvider.originalContentUrl, message.contentProvider.previewImageUrl);
+    }
+  }
+
+
+  async function downloadContent(messageId, downloadPath) {
+    const stream = await blobClient.getMessageContent(messageId)
+  
+    const pipelineAsync = util.promisify(pipeline);
+  
+    const writable = fs.createWriteStream(downloadPath);
+    await pipelineAsync(stream, writable);
   }
 
   // Function to upload image data to Google Drive
