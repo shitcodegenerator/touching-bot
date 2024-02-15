@@ -7,6 +7,7 @@ const path = require('path');
 const cp = require('child_process');
 const util = require('util');
 const { pipeline } = require('stream');
+const axios = require('axios')
 
 // create LINE SDK config from env variables
 const config = {
