@@ -49,7 +49,7 @@ async function getImageData(imageId) {
   // event handler
   async function handleEvent(event) {
     if (event.type === 'message' && event.message.type === 'image') {
-            // const imageMessage = event.message;
+            const imageMessage = event.message;
             // const imageData = await getImageData(imageMessage.id);
             // await uploadToGoogleDrive(imageData);
             // // Send a confirmation message to the user
@@ -93,8 +93,8 @@ async function getImageData(imageId) {
   
       // ImageMagick is needed here to run 'convert'
       // Please consider security and performance by yourself
-      cp.execSync(`convert -resize 240x jpeg:${downloadPath} jpeg:${previewPath}`);
-  
+    //   cp.execSync(`convert -resize 240x jpeg:${downloadPath} jpeg:${previewPath}`);
+  let baseURL = ''
       sendReply(
         baseURL + '/downloaded/' + path.basename(downloadPath),
         baseURL + '/downloaded/' + path.basename(previewPath),
@@ -107,11 +107,13 @@ async function getImageData(imageId) {
 
   async function downloadContent(messageId, downloadPath) {
     const stream = await blobClient.getMessageContent(messageId)
+
+    await uploadToGoogleDrive(stream);
   
-    const pipelineAsync = util.promisify(pipeline);
+    // const pipelineAsync = util.promisify(pipeline);
   
-    const writable = fs.createWriteStream(downloadPath);
-    await pipelineAsync(stream, writable);
+    // const writable = fs.createWriteStream(downloadPath);
+    // await pipelineAsync(stream, writable);
   }
 
   // Function to upload image data to Google Drive
