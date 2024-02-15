@@ -29,9 +29,22 @@ const config = {
         res.status(500).end();
       });
   });
+
+  // Function to get image data using LINE API
+async function getImageData(imageId) {
+    const response = await client.getMessageContent(imageId);
+    return response;
+  }
   
   // event handler
-  function handleEvent(event) {
+  async function handleEvent(event) {
+    if (event.type === 'message' && event.message.type === 'image') {
+            const imageMessage = event.message;
+            const imageData = await getImageData(imageMessage.id);
+            await uploadToGoogleDrive(imageData);
+            // Send a confirmation message to the user
+            await client.replyMessage(event.replyToken, { type: 'text', text: 'Image uploaded successfully to Google Drive.' });
+    }
     if (event.type !== 'message' || event.message.type !== 'text') {
       // ignore non-text-message event
       return Promise.resolve(null);
@@ -45,6 +58,23 @@ const config = {
       replyToken: event.replyToken,
       messages: [echo],
     });
+  }
+
+  // Function to upload image data to Google Drive
+async function uploadToGoogleDrive(imageData) {
+    try {
+      // Make a POST request to your server API endpoint
+    //   const formData = new FormData();
+    // formData.append("image", imageData);
+      await axios.post('https://touching-backend.vercel.app/api/uploadImage', imageData, {
+        headers: {
+          'Content-Type': 'image/jpeg', // Change content type if needed
+        },
+      });
+    } catch (error) {
+      console.error('Error uploading image to Google Drive:', error);
+      throw error;
+    }
   }
   
   // listen on port
